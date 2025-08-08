@@ -1,0 +1,1 @@
+// This file is a placeholder to ensure middleware applied via AppModule consumer if needed.

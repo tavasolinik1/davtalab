@@ -1,0 +1,31 @@
+{
+  "realm": "volunteerhub",
+  "enabled": true,
+  "clients": [
+    {
+      "clientId": "volunteerhub-api",
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": true,
+      "redirectUris": ["*"]
+    },
+    {
+      "clientId": "volunteerhub-web",
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "redirectUris": ["http://localhost:5173/*"]
+    }
+  ],
+  "roles": {
+    "realm": [
+      { "name": "SUPER_ADMIN" },
+      { "name": "NGO_ADMIN" },
+      { "name": "PROJECT_MANAGER" },
+      { "name": "VOLUNTEER" }
+    ]
+  }
+}
