@@ -1,0 +1,74 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Ngo {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  tenantId  String?  @db.Uuid @map("tenant_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  opportunities Opportunity[]
+  memberships   VolunteerMembership[]
+
+  @@map("ngos")
+}
+
+model Volunteer {
+  id          String   @id @default(uuid()) @db.Uuid
+  fullNameEnc String   @map("full_name_enc")
+  emailEnc    String   @map("email_enc")
+  phoneEnc    String?  @map("phone_enc")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  memberships VolunteerMembership[]
+  applications Application[]
+
+  @@map("volunteers")
+}
+
+model VolunteerMembership {
+  id          String   @id @default(uuid()) @db.Uuid
+  volunteerId String   @db.Uuid @map("volunteer_id")
+  tenantId    String   @db.Uuid @map("tenant_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  volunteer Volunteer @relation(fields: [volunteerId], references: [id], onDelete: Cascade)
+  ngo       Ngo       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([volunteerId, tenantId], name: "volunteer_tenant_unique")
+  @@map("volunteer_memberships")
+}
+
+model Opportunity {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @db.Uuid @map("tenant_id")
+  title       String
+  description String
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  ngo        Ngo          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  applications Application[]
+
+  @@map("opportunities")
+}
+
+model Application {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @db.Uuid @map("tenant_id")
+  opportunityId String   @db.Uuid @map("opportunity_id")
+  volunteerId   String   @db.Uuid @map("volunteer_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  opportunity Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  volunteer   Volunteer   @relation(fields: [volunteerId], references: [id], onDelete: Cascade)
+
+  @@map("applications")
+}

@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: volunteerhub-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: volunteerhub-backend
+  template:
+    metadata:
+      labels:
+        app: volunteerhub-backend
+    spec:
+      containers:
+        - name: backend
+          image: ghcr.io/your-org/volunteerhub-backend:latest
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - secretRef: { name: volunteerhub-secrets }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: volunteerhub-backend
+spec:
+  selector:
+    app: volunteerhub-backend
+  ports:
+    - port: 80
+      targetPort: 3000
