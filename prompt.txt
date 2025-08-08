@@ -1,0 +1,234 @@
+### Comprehensive English Prompt for AI Agent (Copy-Friendly Version)
+
+# VolunteerHub - Multi-Tenant Volunteer Management System
+
+## Core Requirements
+1. **Multi-Tenant Architecture**
+   - Each NGO operates as isolated tenant with dedicated data space
+   - Strict row-level security (RLS) enforcement via PostgreSQL
+   - Volunteers can join multiple NGOs while maintaining separate data contexts
+
+2. **User Roles & Permissions**
+typescript
+enum UserRole {
+  SUPER_ADMIN,    // Platform management
+  NGO_ADMIN,      // Full access to single NGO
+  PROJECT_MANAGER, // Project-specific access
+  VOLUNTEER
+}
+
+3. **Mobile-First Web Application**
+   - Progressive Web App (PWA) implementation
+   - Responsive design (Mobile: 100%, Tablet: 100%, Desktop: 100%)
+   - Offline capability for form submissions
+
+4. **Key Functionalities**
+   - Volunteer onboarding with NGO selection
+   - Opportunity management with geolocation
+   - Real-time notifications system
+   - Multi-tenant dashboards with isolated analytics
+   - Gamification engine (badges, points system)
+
+## Technical Specifications
+
+### 1. Tech Stack
+| Layer          | Technologies                                                                 |
+|----------------|-----------------------------------------------------------------------------|
+| **Frontend**   | React 18 + TypeScript + Vite + Tailwind CSS + PWA Config                    |
+| **Backend**    | NestJS 10 + TypeScript + Prisma ORM + Swagger                               |
+| **Database**   | PostgreSQL 15 with Row-Level Security (RLS) + pg_cron                       |
+| **Auth**       | Keycloak 22 (OIDC) with RBAC                                                |
+| **Deployment** | Docker + Kubernetes + AWS EKS                                               |
+| **Monitoring** | Prometheus + Grafana + Sentry                                               |
+
+### 2. Multi-Tenancy Implementation
+typescript
+// tenant.context.middleware.ts
+@Injectable()
+export class TenantMiddleware implements NestMiddleware {
+  use(req: Request, res: Response, next: NextFunction) {
+    const tenantId = req.user?.tenantId;
+    
+    if (req.user.role !== UserRole.SUPER_ADMIN && !tenantId) {
+      throw new ForbiddenException('Tenant context missing');
+    }
+
+    req.tenantId = tenantId;
+    next();
+  }
+}
+
+
+sql
+-- RLS Policy Example
+CREATE POLICY tenant_isolation_policy ON volunteers
+FOR ALL
+USING (tenant_id = current_setting('app.current_tenant')::UUID);
+
+### 3. Critical API Endpoints
+| Endpoint                          | Method | Role            | Description                                     |
+|-----------------------------------|--------|-----------------|------------------------------------------------|
+| `/ngos`                           | POST   | SUPER_ADMIN     | Create new NGO tenant                          |
+| `/opportunities`                  | POST   | NGO_ADMIN       | Create volunteer opportunity                   |
+| `/opportunities/:id/apply`        | POST   | VOLUNTEER       | Apply to opportunity                           |
+| `/dashboard/analytics`            | GET    | NGO_ADMIN       | Get tenant-specific analytics                  |
+| `/volunteers/multi-join`          | POST   | VOLUNTEER       | Join multiple NGOs simultaneously              |
+
+### 4. Database Schema Highlights
+mermaid
+erDiagram
+    tenants ||--o{ opportunities : ""
+    tenants ||--o{ tenant_volunteers : ""
+    volunteers ||--o{ tenant_volunteers : ""
+    opportunities ||--o{ applications : ""
+
+    tenants {
+        UUID id PK
+        string name
+        string slug
+        jsonb custom_fields
+    }
+    
+    volunteers {
+        UUID id PK
+        string email
+        string phone
+        geography location
+    }
+    
+    tenant_volunteers {
+        UUID tenant_id FK
+        UUID volunteer_id FK
+        datetime joined_at
+        enum status
+    }
+    
+    opportunities {
+        UUID id PK
+        UUID tenant_id FK
+        string title
+        geolocation coordinates
+        daterange date_range
+    }
+`### 5. PWA Requirements
+- Service Worker:
+  - Precaching of core assets
+  - Background sync for form submissions
+  - Push notification handling
+
+- Web App Manifest:
+ 
+  {
+    "name": "VolunteerHub",
+    "short_name": "VHub",
+    "start_url": "/?source=pwa",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "icons": [...]
+  }
+  
+- Performance Targets:
+  - First Contentful Paint < 1.5s
+  - Time to Interactive < 3s
+  - Core Web Vitals ≥ 90/100
+
+### 6. Security Requirements
+1. Data Protection:
+   - AES-256 encryption at rest for PII
+   - Field-level encryption for sensitive data
+   - Vault integration for secret management
+
+2. Access Control:
+   - Session timeout: 30 minutes
+   - JWT expiration: 4 hours
+   - Refresh token rotation
+
+3. Auditing:
+   - Data access logs (WHOIS)
+   - Change tracking for critical operations
+   - Quarterly penetration testing
+
+### 7. Testing Strategy
+- Unit Tests: 100% coverage for security-critical modules
+- Integration Tests: 
+ 
+  Scenario: NGO Admin access isolation
+    Given NGO Admin from "GreenEarth"
+    When Requesting volunteers list
+    Then Should only see "GreenEarth" volunteers
+  
+- E2E Tests: 
+  - Cross-tenant access attempts
+  - Mobile device matrix testing
+  - Offline mode validation
+
+### 8. DevOps Pipeline
+# .github/workflows/deploy.yml
+name: Production Deployment
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build Containers
+        run: docker-compose -f docker-compose.prod.yml build
+        
+      - name: Security Scan
+        uses: shiftleft/sast-scan@v2
+        
+      - name: Deploy to EKS
+        run: kubectl apply -f k8s/production
+        env:
+          KUBECONFIG: ${{ secrets.KUBE_CONFIG }}
+### 9. Development Milestones
+1. Phase 1 (MVP):
+   - Tenant registration flow
+   - Volunteer onboarding (mobile-optimized)
+   - Basic opportunity management
+   
+2. Phase 2:
+   - Real-time notifications
+   - Gamification engine
+   - Advanced reporting
+
+3. Phase 3:
+   - Native mobile apps (React Native)
+   - AI-based volunteer matching
+   - Integration marketplace
+
+## Expected Deliverables
+1. Fully containerized application
+2. Infrastructure as Code (Terraform)
+3. API documentation (Swagger/OpenAPI 3.0)
+4. Load testing report (≥ 1000 concurrent users)
+5. PWA lighthouse report (≥ 90/100 mobile score)
+`
+
+---
+
+### Key Implementation Notes for Developer:
+1. Tenant Isolation First: Implement RLS before any business logic
+2. Mobile-Focus: 
+   - Touch targets ≥ 48x48px
+   - Input fields with mobile keyboards in mind
+   - Network resilience patterns (retry queues)
+3. Performance Optimization:
+   - Code splitting for PWA
+   - GraphQL for data fetching (Apollo Client)
+   - Redis caching layer
+4. Internationalization: 
+   - RTL support (Persian/Arabic)
+   - Date/number localization
+5. Accessibility:
+   - WCAG 2.1 AA compliance
+   - Screen reader testing
+6. Cost Optimization:
+   - Autoscaling policies
+   - Spot instance utilization
+   - CDN caching strategy
+
+This prompt provides complete technical specifications while maintaining mobile-first focus. For implementation, start with the NestJS Prisma template and add RLS modules before developing frontend components.
